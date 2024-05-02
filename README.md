@@ -81,12 +81,12 @@ cargo run -p flo-controller-service
 ```
 
 ### Start 2 Clients
-# for player 1
+For player 1
 ```
 cargo run -p flo-cli -- client 1 connect
 ```
 
-# for player 2
+For player 2
 ```
 cargo run -p flo-cli -- client 2 connect
 ```
