@@ -1,123 +1,145 @@
-Prepare environment
+Complete Ubuntu Installation Guide (Tested on Ubuntu Server 24.04)
 -------------------
 
-Update packages
+### Update packages
 
 ```shell
-apt update
-apt upgrade
+sudo apt update
+sudo apt upgrade
 ```
 
-Install required packages
+### Clone the repository
 
 ```shell
-apt install build-essential cmake postgresql git libpq-dev libavahi-compat-libdnssd-dev libbz2-dev libexpat1-dev libpq-dev
+git clone --recursive https://github.com/w3champions/flo.git
 ```
 
-Install rustup
+### Install Rust
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.bashrc
 ```
 
-Get code
---------
-
-```shell
-git clone --recursive https://github.com/w3champions/flo.git
-```
-
-Prepare database
-----------------
-
-install diesel_cli
+### Create .env file in flo code root
 
 ```shell
 cd flo
-export PQ_LIB_DIR=/usr/lib/x86_64-linux-gnu/
-cargo install diesel_cli --no-default-features --features postgres
+nano .env
 ```
 
-enable password auth instead of peer by editing `/etc/postgresql/11/main/pg_hba.conf`
-
-should be ```local  all  postgres  md5```
-
-restart postgres
-
-```shell
-systemctl restart postgresql
-```
-
-set password for pgsql user
-
-```bash
-su postgres
-pgsql
-postgres=# \password
-Enter new password: 
-Enter it again: 
-postgres=# exit
-exit
-```
-
-create `.env` file in flo code root
 ```ini
 RUST_LOG=debug
 DATABASE_URL=postgres://postgres:postgres@localhost/flo
+FLO_NODE_SECRET=1111
 JWT_SECRET_BASE64=dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
 ```
 
-as pgsql user create database and fill it using diesel
-(use your password)
+### Install CMake
 
 ```shell
-export PGPASSWORD=postgres
-psql -U postgres -c "create database flo"
+sudo apt install cmake
+```
+
+### Install Diesel CLI
+
+If you're having trouble installing Diesel, read more here: https://diesel.rs/guides/getting-started
+
+By default Diesel CLI depends on libraries for PostgreSQL, Mysql and SQLite. Since we only need PostgreSQL support, we install the PostgreSQL dependencies.
+
+```shell
+sudo apt install postgresql libpq-dev
+```
+
+Install Diesel CLI
+
+```shell
+cargo install diesel_cli --no-default-features --features postgres
+```
+
+### Postgres configuration
+
+Set the postgres db user password
+
+```
+sudo -u postgres psql
+postgres=# alter user postgres password 'postgres';
+```
+
+In `/etc/postgresql/<version>/main/pg_hba.conf`, Change ```local  all  postgres  peer``` to ```local  all  postgres  md5```
+
+Restart postgres
+
+```shell
+sudo systemctl restart postgresql
+```
+
+Create database schema using diesel
+
+```shell
 diesel setup
 ```
 
-add api_client and node rows to postgres
-(NOTE: use server ip and not 127.0.0.1)
+### Insert db data
+
+Insert a row into the `api_client` table with `secret_key` = `1111` (Corresponds to the value in the .env file)
 
 ```shell
-psql -U postgres -d flo -c "insert into api_client (name, secret_key) VALUES ('mawa', 'mawa')"
-psql -U postgres -d flo -c "insert into node (name, location, secret, ip_addr) VALUES ('mawa', 'US 6', 'mawa', '127.0.0.1')"
+psql -U postgres -d flo -c "insert into api_client (name, secret_key) VALUES ('testclient', '1111')"
 ```
 
-Building
---------
-
-build controller and node services
+Insert a row into the `node` table with `secret` = `1111` (Corresponds to the value in the .env file)
+(NOTE: use the server IP and not 127.0.0.1)
 
 ```shell
-cargo build -p flo-controller-service --release
+psql -U postgres -d flo -c "insert into node (name, location, secret, ip_addr) VALUES ('testnode', 'Germany', '1111', '127.0.0.1')"
+```
+
+### Build flo-node-service
+
+Before building flo-node-service, make sure the `pkg-config` package is installed. It is needed for the system to find OpenSSL which is used when compiling `openssl-sys`.
+
+```shell
+sudo apt install pkg-config
+```
+
+```shell
 cargo build -p flo-node-service --release
 ```
 
-Running
--------
-
-export secret key
+### Build flo-controller-service
 
 ```shell
-export FLO_NODE_SECRET='mawa'
+cargo build -p flo-controller-service --release
 ```
 
-run node first
+### Run flo-node-service
+
+Set the `FLO_NODE_SECRET` environment variable
+
+```shell
+export FLO_NODE_SECRET='1111'
+```
+
+Run flo-node-service
 
 ```shell
 ./target/release/flo-node-service
+```
+
+### Run flo-controller-service
+
+```shell
 ./target/release/flo-controller-service
 ```
 
-Running as sercice
+Running as a service
 ------------------
 
-Create following service files for systemd:
+Create the following service files for systemd (NOTE: Change WorkingDirectory to where you cloned the repository)
 
  - /usr/lib/systemd/system/flo-node.service
- 
+
 ```service
 [Unit]
 Description=Flo Node Service
@@ -126,8 +148,8 @@ After=postgresql.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/flo
-ExecStart=/bin/bash -l -c "FLO_NODE_SECRET='mawa' ./target/release/flo-node-service"
+WorkingDirectory=/home/<YOUR_USERNAME>/flo
+ExecStart=/bin/bash -l -c "FLO_NODE_SECRET='1111' ./target/release/flo-node-service"
 Restart=on-failure
 
 [Install]
@@ -144,52 +166,60 @@ After=postgresql.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/flo
-ExecStart=/bin/bash -l -c "FLO_NODE_SECRET='mawa' ./target/release/flo-controller-service"
+WorkingDirectory=/home/<YOUR_USERNAME>/flo
+ExecStart=/bin/bash -l -c "FLO_NODE_SECRET='1111' ./target/release/flo-controller-service"
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Make those visible with running:
+Make the services visible by running
 
 ```shell
-systemctl daemon-reload
+sudo systemctl daemon-reload
 ```
 
-Run with
+Run the services with
 
 ```shell
-systemctl start flo-node
-systemctl start flo-controller
+sudo systemctl start flo-node
+sudo systemctl start flo-controller
 ```
 
-Trace logs:
+Trace logs
 
 ```shell
 journalctl -f -u flo-node
+journalctl -f -u flo-controller
 ```
 
-Run automatically with system start:
+Run automatically on system startup
 
 ```shell
-systemctl enable postgresql
-systemctl enable flo-node
-systemctl enable flo-controller
+sudo systemctl enable postgresql
+sudo systemctl enable flo-node
+sudo systemctl enable flo-controller
 ```
 
 TESTING
 -------
 
-build flo-cli
+Before building flo-cli, make sure you have `g++` (C++ compiler) `zlib1g-dev` (ZLIB library), `libbz2-dev` (BZIP2 library) and `libavahi-compat-libdnssd-dev` (dnssd library) installed.
 
 ```shell
-apt install libavahi-compat-libdnssd-dev zlib1g-dev libbz2-dev
+sudo apt install g++ zlib1g-dev libbz2-dev libavahi-compat-libdnssd-dev
+```
+
+### Build flo-cli
+
+```shell
 cargo build -p flo-cli --release
 ```
 
-run
+If you receive an error saying something like ```multiple definition of `zlibVersion'``` when building flo-cli, try deleting the `target` directory and then build flo-cli first, then flo-node-service, then flo-controller-service.
+
+### Run flo-cli
 
 ```shell
 ./target/release/flo-cli server --help
@@ -197,13 +227,13 @@ run
 ./target/release/flo-cli server upsert-player 1
 ```
 
-copy token from the last command and use it to run flo-worker locally
+Copy token from the last command and use it to run flo-worker locally
 
 ```shell
 flo-worker.exe --controller-host="45.33.104.208" --token="eyJ0...."
 ```
 
-if you get no errors you can create test game
+If you get no errors you can create test game
 
 ```shell
 ./target/release/flo-cli server run-game 2
@@ -212,10 +242,10 @@ if you get no errors you can create test game
 Tips
 ----
 
-to update ip addres you may use:
+To update the IP address of a node, you may use:
 ```shell
 psql -U postgres -d flo -c "update node set ip_addr = '45.33.104.208' WHERE id = 1"
 psql -U postgres -d flo -c "select * from node"
-systemctl restart flo-node
-systemctl restart flo-controller
+sudo systemctl restart flo-node
+sudo systemctl restart flo-controller
 ```
