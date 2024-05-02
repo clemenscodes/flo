@@ -9,6 +9,8 @@ FLO is a Warcraft III toolkit written in Rust:
 
 ## Setup Local Development Environment
 
+NOTE: Full Ubuntu Installation guide is available in [INSTALL.md](INSTALL.md)
+
 ### Install Prerequisites
 
 - C++ Compiler
@@ -44,14 +46,33 @@ diesel migration run
 ```
 
 ### Add an API client
-Insert a row into `api_client` table with secret = `1111` (Corresponds to the values in above .env file)
+Insert a row into `api_client` table with secret_key = `1111` (Corresponds to the FLO_NODE_SECRET value in above .env file)
+
+```shell
+psql -d flo -U postgres
+```
+
+```
+flo=# insert into api_client (name, secret_key) values ('testclient', '1111');
+```
 
 ### Add Players
-Insert 2 rows into `player` table with `source` = `0`, `source_id` = unique values (e.g 1, 2), and `api_client_id` equals to the API client id you created in the previous step.
-Assuming added player ids are `1` and `2`
+Insert 2 rows into `player` table with `source` = `0`, `source_id` = unique values (e.g 1, 2), and `api_client_id` equal to the id of the row you created in `api_client`.
+
+```
+flo=# insert into player (name, source, source_id, api_client_id) values ('player1', '0', '1', '1');
+```
+
+```
+flo=# insert into player (name, source, source_id, api_client_id) values ('player2', '0', '2', '1');
+```
 
 ### Add Node
-Insert a row into `node` with `secret` = `1111` (Corresponds to the values in above .env file)
+Insert a row into `node` with `secret` = `1111` (Corresponds to the FLO_NODE_SECRET value in above .env file)
+
+```
+flo=# insert into node (name, location, ip_addr, secret) values ('node1', 'Germany', '192.168.0.5', '1111');
+```
 
 ### Start Node & Controller
 ```
