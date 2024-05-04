@@ -330,6 +330,8 @@ impl<'a> GameHandler<'a> {
   }
 
   fn handle_chat_command(&mut self, cmd: ChatCommand) -> bool {
+    let is_ffa = self.info.game.mask_player_names;
+
     match cmd.raw() {
       "flo" => {
         let messages = vec![
@@ -357,15 +359,18 @@ impl<'a> GameHandler<'a> {
             "Server: {}, {}, {} (#{})",
             self.node.name, self.node.location, self.node.country_id, self.node.id
           ),
-          "Players:".to_string(),
         ];
 
-        for slot in &self.info.game.slots {
-          if let Some(ref player) = slot.player.as_ref() {
-            messages.push(format!(
-              "  {}: Team {}, {:?}",
-              player.name, slot.settings.team, slot.settings.race
-            ));
+        if !is_ffa {
+          messages.push("Players:".to_string());
+
+          for slot in &self.info.game.slots {
+            if let Some(ref player) = slot.player.as_ref() {
+              messages.push(format!(
+                "  {}: Team {}, {:?}",
+                player.name, slot.settings.team, slot.settings.race
+              ));
+            }
           }
         }
 
@@ -628,7 +633,7 @@ impl<'a> GameHandler<'a> {
 
         let cmd = cmd.trim_end();
         if cmd == "mute" || cmd == "mutef" {
-          let forever = cmd == "mutef";
+          let forever = cmd == "mutef" && !is_ffa;
           match targets.len() {
             0 => {
               self.send_chats_to_self(
@@ -658,7 +663,7 @@ impl<'a> GameHandler<'a> {
             }
           }
         } else {
-          let forever = cmd.starts_with("mutef");
+          let forever = cmd.starts_with("mutef") && !is_ffa;
           let id = if forever {
             &cmd["mutef ".len()..]
           } else {
@@ -728,7 +733,7 @@ impl<'a> GameHandler<'a> {
 
         let cmd = cmd.trim_end();
         if cmd == "unmute" || cmd == "unmutef" {
-          let forever = cmd == "unmutef";
+          let forever = cmd == "unmutef" && !is_ffa;
           match targets.len() {
             0 => {
               self.send_chats_to_self(
@@ -758,7 +763,7 @@ impl<'a> GameHandler<'a> {
             }
           }
         } else {
-          let forever = cmd.starts_with("unmutef");
+          let forever = cmd.starts_with("unmutef") && !is_ffa;
           let id = if forever {
             &cmd["unmutef ".len()..]
           } else {
@@ -797,10 +802,10 @@ impl<'a> GameHandler<'a> {
           }
         }
       }
-      cmd if cmd.starts_with("rtt") && self.info.game.mask_player_names => {
+      cmd if cmd.starts_with("rtt") && is_ffa => {
         self.send_chats_to_self(
           self.info.slot_info.my_slot_player_id,
-          vec!["Command disabled".to_string()],
+          vec!["Command disabled.".to_string()],
         );
       }
       _ => {
