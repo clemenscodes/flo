@@ -213,6 +213,7 @@ message GameInfo {
   bool is_live = 9;
   int32 random_seed = 10;
   PlayerInfo created_by = 11;
+  bool mask_player_names = 12;
 }
 
 message Slot {

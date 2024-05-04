@@ -2,7 +2,7 @@ use crate::error::{Error, Result};
 use flo_types::game::{GameInfo, LocalGameInfo};
 
 pub fn local_game_from_game_info(player_id: i32, game: &GameInfo) -> Result<LocalGameInfo> {
-  Ok(LocalGameInfo { 
+  Ok(LocalGameInfo {
     name: game.name.clone(),
     game_id: game.id,
     random_seed: game.random_seed,
@@ -25,5 +25,6 @@ pub fn local_game_from_game_info(player_id: i32, game: &GameInfo) -> Result<Loca
       .collect(),
     slots: game.slots.clone(),
     host_player: game.created_by.clone(),
+    mask_player_names: game.mask_player_names,
   })
 }

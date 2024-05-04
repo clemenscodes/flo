@@ -16,6 +16,7 @@ impl Command {
         let (map, checksum) = W3Map::open_with_checksum(path)?;
         println!("Checkdsum: {:?}", checksum);
         println!("Map Name: {}", map.name());
+        println!("Map Players: {:?}", map.get_players().len());
       }
     }
     Ok(())

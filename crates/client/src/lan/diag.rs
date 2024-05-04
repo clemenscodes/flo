@@ -57,6 +57,7 @@ pub async fn run_test_lobby(
     is_live: false,
     random_seed: 0,
     created_by: None,
+    mask_player_names: false,
   };
 
   let info = LanGameInfo {
