@@ -70,6 +70,7 @@ pub struct GameInfo {
   pub is_live: bool,
   pub random_seed: i32,
   pub created_by: Option<PlayerInfo>,
+  pub mask_player_names: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -85,8 +86,8 @@ pub struct LocalGameInfo {
   pub players: HashMap<i32, PlayerInfo>,
   pub slots: Vec<Slot>,
   pub host_player: Option<PlayerInfo>,
+  pub mask_player_names: bool,
 }
-
 
 #[derive(Debug, S2ProtoEnum, PartialEq, Copy, Clone, Serialize)]
 #[s2_grpc(proto_enum_type = "flo_net::proto::flo_connect::GameStatus")]

@@ -98,21 +98,25 @@ impl<'a> GameHandler<'a> {
     let mut muted_names = vec![];
     #[cfg(feature = "blacklist")]
     let mut blacklisted = vec![];
-    for p in &self.info.slot_info.player_infos {
-      if mute_list.contains(&p.player_id) {
-        muted_names.push(p.name.clone());
-        self.muted_players.insert(p.slot_player_id);
+
+    // Disable auto-mute (mutef) for FFA games
+    if !self.info.game.mask_player_names {
+      for p in &self.info.slot_info.player_infos {
+        if mute_list.contains(&p.player_id) {
+          muted_names.push(p.name.clone());
+          self.muted_players.insert(p.slot_player_id);
+        }
+        #[cfg(feature = "blacklist")]
+        if let Some(r) = blacklist::read(&p.name).unwrap_or(None) {
+          blacklisted.push(format!("{} for {}", p.name.clone(), r));
+        }
       }
-      #[cfg(feature = "blacklist")]
-      if let Some(r) = blacklist::read(&p.name).unwrap_or(None) {
-        blacklisted.push(format!("{} for {}", p.name.clone(), r));
+      if !muted_names.is_empty() {
+        self.send_chats_to_self(
+          self.info.slot_info.my_slot_player_id,
+          vec![format!("Auto muted: {}", muted_names.join(", "))],
+        )
       }
-    }
-    if !muted_names.is_empty() {
-      self.send_chats_to_self(
-        self.info.slot_info.my_slot_player_id,
-        vec![format!("Auto muted: {}", muted_names.join(", "))],
-      )
     }
     #[cfg(feature = "blacklist")]
     if !blacklisted.is_empty() {
@@ -792,6 +796,12 @@ impl<'a> GameHandler<'a> {
             );
           }
         }
+      }
+      cmd if cmd.starts_with("rtt") && self.info.game.mask_player_names => {
+        self.send_chats_to_self(
+          self.info.slot_info.my_slot_player_id,
+          vec!["Command disabled".to_string()],
+        );
       }
       _ => {
         // unknown command treats like regular chat message

@@ -54,6 +54,7 @@ impl S2ProtoPack<flo_net::proto::flo_connect::GameInfo> for Game {
       is_live: self.is_live,
       random_seed: self.random_seed,
       created_by: self.created_by.pack()?,
+      mask_player_names: self.mask_player_names,
     })
   }
 }
