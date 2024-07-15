@@ -131,6 +131,10 @@ impl W3Map {
     self.file_size
   }
 
+  pub fn is_twelve_p(&self) -> bool {
+    return self.info.editor_version.unwrap_or(0) < 6060;
+  }
+
   pub fn name(&self) -> Cow<str> {
     self
       .trigger_strings
