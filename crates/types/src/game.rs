@@ -81,6 +81,7 @@ pub struct LocalGameInfo {
   pub node_id: Option<i32>,
   pub player_id: i32,
   pub map_path: String,
+  pub map_twelve_p: bool,
   pub map_sha1: [u8; 20],
   pub map_checksum: u32,
   pub players: HashMap<i32, PlayerInfo>,
@@ -116,6 +117,7 @@ pub struct Map {
   pub sha1: Vec<u8>,
   pub checksum: u32,
   pub path: String,
+  pub twelve_p: bool
 }
 
 #[derive(Debug, S2ProtoUnpack, Serialize, Clone)]
@@ -282,6 +284,7 @@ pub struct MapDetail {
   pub num_players: usize,
   pub players: Vec<MapPlayerOwned>,
   pub forces: Vec<MapForceOwned>,
+  pub twelve_p: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]

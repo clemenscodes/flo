@@ -269,6 +269,7 @@ impl Handler<GetMapDetail> for Platform {
               player_set: f.player_set,
             })
             .collect(),
+          twelve_p: map.is_twelve_p(),
         })
       })
       .await
@@ -375,6 +376,7 @@ impl Platform {
               game_version,
               &name,
               MAP_PATH,
+              map.is_twelve_p(),
               width as u16,
               height as u16,
               checksum,

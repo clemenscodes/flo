@@ -147,6 +147,7 @@ impl<'a> LobbyHandler<'a> {
       return Ok(());
     }
     self.starting = true;
+    self.stream.send(Packet::simple(self.info.slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo)?).await?;
     self.stream.send(Packet::simple(CountDownStart)?).await?;
     sleep(Duration::from_secs(6)).await;
     self.stream.send(Packet::simple(CountDownEnd)?).await?;
@@ -186,6 +187,9 @@ impl<'a> LobbyHandler<'a> {
           slot_info.slot_info.num_players,
           slot_info.slot_info.random_seed
         );
+
+        replies.push(Packet::simple(slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo)?);
+
 
         let mut player_info_packets = Vec::with_capacity(num_players);
         let mut player_skin_packets = Vec::with_capacity(num_players);
