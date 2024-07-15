@@ -178,7 +178,7 @@ impl W3Map {
             race: p.race,
             flags: p.flags,
           })
-          .collect::<Vec<_>>()
+          .collect()
       })
       .or_else(|| {
         self.info.players_reforged.as_ref().map(|players| {

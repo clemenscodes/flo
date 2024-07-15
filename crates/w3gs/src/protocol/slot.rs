@@ -100,7 +100,7 @@ impl SlotInfoBuilder {
   pub fn num_slots(&mut self, value: usize) -> &mut Self {
     self.inner.slots.resize_with(value, || SlotData::default());
     self.inner._length_of_slot_data = (7 + (SlotData::MIN_SIZE * value)) as u16;
-    self.inner._num_slots = 24;
+    self.inner._num_slots = value as u8;
     self
   }
 

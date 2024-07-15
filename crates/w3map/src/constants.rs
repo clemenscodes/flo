@@ -13,5 +13,11 @@ bitflags! {
     const CUSTOM_UPGRADES = 0x0200;
     const WATER_WAVES_ON_CLIFF_SHORES = 0x0800;
     const WATER_WAVES_ON_SLOPE_SHORES = 0x1000;
+    const HAS_TERRAIN_FOG = 0x2000;
+    const REQUIRES_EXPANSION = 0x4000;
+    const ITEM_CLASSIFICATION = 0x8000;
+    const WATER_TINTING = 0x10000;
+    const ACCURATE_RANDOM = 0x20000;
+    const ABILITY_SKINS = 0x40000;
   }
 }

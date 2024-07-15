@@ -14,7 +14,7 @@ impl Command {
     match *self {
       Command::Inspect { ref path } => {
         let (map, checksum) = W3Map::open_with_checksum(path)?;
-        println!("Checkdsum: {:?}", checksum);
+        println!("Checksum: {:?}", checksum);
         println!("Map Name: {}", map.name());
         println!("Map Players: {:?}", map.get_players().len());
       }
