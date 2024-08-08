@@ -1,5 +1,5 @@
 use flo_config::ClientConfig;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(windows)]
 mod windows_bindings;
@@ -71,13 +71,13 @@ impl ClientPlatformInfo {
     let mut executable_path = installation_path.clone();
     if ptr {
       executable_path.push("_ptr_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.exe");
+      
     } else {
       executable_path.push("_retail_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.exe");
     };
+    executable_path.push("x86_64");
+    executable_path.push("Warcraft III.exe");
+
     let version = crate::war3::get_war3_version(&executable_path)?;
 
     Ok(ClientPlatformInfo {
@@ -110,13 +110,11 @@ impl ClientPlatformInfo {
     let mut executable_path = installation_path.clone();
     if ptr {
       executable_path.push("_ptr_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.app");
     } else {
       executable_path.push("_retail_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.app");
     };
+    executable_path.push("x86_64");
+    executable_path.push("Warcraft III.app");
 
     tracing::debug!("executable_path: {:?}", executable_path);
 
@@ -163,13 +161,12 @@ impl ClientPlatformInfo {
     let mut executable_path = installation_path.clone();
     if ptr {
       executable_path.push("_ptr_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.exe");
     } else {
       executable_path.push("_retail_");
-      executable_path.push("x86_64");
-      executable_path.push("Warcraft III.exe");
     };
+    executable_path.push("x86_64");
+    executable_path.push("Warcraft III.exe");
+    
     tracing::debug!("executable_path: {:?}", executable_path);
 
     let user_data_path = config
