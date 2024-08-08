@@ -1,5 +1,5 @@
 use flo_config::ClientConfig;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(windows)]
 mod windows_bindings;
@@ -68,11 +68,16 @@ impl ClientPlatformInfo {
 
     let ptr = config.ptr.unwrap_or(false);
 
-    let executable_path = installation_path.join(if ptr {
-      "_ptr_/x86_64/Warcraft III.exe"
+    let mut executable_path = installation_path.clone();
+    if ptr {
+      executable_path.push("_ptr_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.exe");
     } else {
-      "_retail_/x86_64/Warcraft III.exe"
-    });
+      executable_path.push("_retail_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.exe");
+    };
     let version = crate::war3::get_war3_version(&executable_path)?;
 
     Ok(ClientPlatformInfo {
@@ -102,11 +107,16 @@ impl ClientPlatformInfo {
 
     let ptr = config.ptr.unwrap_or(false);
 
-    let executable_path = installation_path.join(if ptr {
-      "_ptr_/x86_64/Warcraft III.app"
+    let mut executable_path = installation_path.clone();
+    if ptr {
+      executable_path.push("_ptr_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.app");
     } else {
-      "_retail_/x86_64/Warcraft III.app"
-    });
+      executable_path.push("_retail_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.app");
+    };
 
     tracing::debug!("executable_path: {:?}", executable_path);
 
@@ -150,11 +160,16 @@ impl ClientPlatformInfo {
     let ptr = config.ptr.unwrap_or(false);
     tracing::debug!("warcraft_3_version: {:?}", config.version.clone());
 
-    let executable_path = installation_path.join(if ptr {
-      "_ptr_/x86_64/Warcraft III.exe"
+    let mut executable_path = installation_path.clone();
+    if ptr {
+      executable_path.push("_ptr_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.exe");
     } else {
-      "_retail_/x86_64/Warcraft III.exe"
-    });
+      executable_path.push("_retail_");
+      executable_path.push("x86_64");
+      executable_path.push("Warcraft III.exe");
+    };
     tracing::debug!("executable_path: {:?}", executable_path);
 
     let user_data_path = config
