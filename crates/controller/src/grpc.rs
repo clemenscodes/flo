@@ -17,8 +17,12 @@ use flo_grpc::controller::flo_controller_server::*;
 use flo_grpc::controller::*;
 use s2_grpc_utils::{S2ProtoEnum, S2ProtoPack, S2ProtoUnpack};
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::time::Duration;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
+use tower_http::classify::GrpcFailureClass;
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 
 pub async fn serve(state: ControllerStateRef) -> Result<()> {
   let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, flo_constants::CONTROLLER_GRPC_PORT);
@@ -26,7 +30,23 @@ pub async fn serve(state: ControllerStateRef) -> Result<()> {
 
   let interceptor = state.config.send(GetInterceptor).await?;
   let server = FloControllerServer::with_interceptor(server_impl, interceptor);
-  let server = Server::builder().add_service(server);
+  let layer = tower::ServiceBuilder::new()
+    .layer(
+      TraceLayer::new_for_grpc()
+        .on_request(())
+        .on_response(
+          |response: &http::response::Response<_>, _latency: Duration, _span: &Span| {
+            if response.headers().contains_key("grpc-status") {
+              tracing::error!("controller-grpc: on_response: {:?}", response)
+            }
+          },
+        )
+        .on_body_chunk(())
+        .on_eos(())
+        .on_failure(()),
+    )
+    .into_inner();
+  let server = Server::builder().layer(layer).add_service(server);
   server.serve(addr.into()).await?;
   Ok(())
 }

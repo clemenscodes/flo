@@ -1699,7 +1699,7 @@ version = "0.1.0"
 
 [[package]]
 name = "flo-controller"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -1720,6 +1720,7 @@ dependencies = [
  "flo-types",
  "flo-w3gs",
  "futures 0.3.30",
+ "http 0.2.12",
  "jsonwebtoken",
  "once_cell",
  "parking_lot 0.11.2",
@@ -1732,6 +1733,8 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "tower",
+ "tower-http 0.4.4",
  "tracing",
  "tracing-futures",
 ]
@@ -5680,10 +5683,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "tower-layer"
-version = "0.3.2"
+name = "tower-http"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20c8dbed6283a09604c3e69b4b7eeb54e298b8a600d4d5ecb5ad39de609f1d0"
+checksum = "61c5bb1d698276a2443e5ecfabc1008bf15a36c12e6a7176e7bf089ea9131140"
+dependencies = [
+ "bitflags 2.5.0",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http 0.2.12",
+ "http-body 0.4.6",
+ "http-range-header",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-layer"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
 
 [[package]]
 name = "tower-service"
