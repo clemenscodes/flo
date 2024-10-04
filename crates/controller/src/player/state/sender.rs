@@ -156,8 +156,41 @@ impl Handler<PlayersReplaceGame> for PlayerRegistry {
     use flo_net::proto::flo_connect::*;
     let game_id = game.id;
 
+    struct MaskInfo {
+      ob_player_ids: Vec<i32>,
+      frame_game_info_masked: Frame,
+    }
+
+    let mask_info = if game.mask_player_names {
+      let mut game = game.clone();
+      for (idx, slot) in game.slots.iter_mut().enumerate() {
+        slot.player.as_mut().map(|v| {
+          v.name = format!("Player {}", idx + 1);
+        });
+      }
+      Some(MaskInfo {
+        ob_player_ids: game
+          .slots
+          .iter()
+          .filter_map(|v| {
+            if v.settings.team == 24 {
+              v.player.as_ref().map(|p| p.id)
+            } else {
+              None
+            }
+          })
+          .collect(),
+        frame_game_info_masked: PacketGameInfo {
+          game: Some(game.pack()?),
+        }
+        .encode_as_frame()?,
+      })
+    } else {
+      None
+    };
+
     let frame_session_update = get_session_update_packet(Some(game.id)).encode_as_frame()?;
-    let frame_game_info = PacketGameInfo {
+    let frame_game_info_original = PacketGameInfo {
       game: Some(game.pack()?),
     }
     .encode_as_frame()?;
@@ -170,7 +203,19 @@ impl Handler<PlayersReplaceGame> for PlayerRegistry {
             mute_list: mute_list_map.remove(&player_id).unwrap_or_default(),
           }
           .encode_as_frame()?,
-          frame_game_info.clone(),
+          if let Some(MaskInfo {
+            frame_game_info_masked,
+            ob_player_ids,
+          }) = &mask_info
+          {
+            if ob_player_ids.contains(&player_id) {
+              frame_game_info_original.clone()
+            } else {
+              frame_game_info_masked.clone()
+            }
+          } else {
+            frame_game_info_original.clone()
+          },
         ];
         entry.get_mut().game_id = Some(game_id);
         if !entry.get_mut().try_send_frames(frames.into()) {

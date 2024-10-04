@@ -135,6 +135,3 @@ impl MdnsPublisher {
       .map_err(|_| Error::BonjourUpdate("worker dead: recv".to_string()))
   }
 }
-
-#[derive(Clone)]
-pub struct GameInfoSender(Arc<mpsc::Sender<GameInfoRef>>);
