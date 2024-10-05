@@ -74,15 +74,6 @@ impl Handler<CreateGameAsBot> for GameRegistry {
       })
       .await?;
 
-    if game.mask_player_names {
-      for (idx, slot) in game.slots.iter_mut().enumerate() {
-        slot
-          .player
-          .as_mut()
-          .map(|v| v.name = format!("Player {}", idx + 1));
-      }
-    }
-
     self.register(Register {
       id: game.id,
       status: GameStatus::Preparing,

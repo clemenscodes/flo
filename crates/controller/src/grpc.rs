@@ -20,7 +20,6 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use std::time::Duration;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
-use tower_http::classify::GrpcFailureClass;
 use tower_http::trace::TraceLayer;
 use tracing::Span;
 

@@ -39,16 +39,9 @@ pub async fn serve(state: ControllerStateRef) -> Result<()> {
   let mut listener = FloListener::bind_v4(flo_constants::CONTROLLER_SOCKET_PORT).await?;
   tracing::info!("listening on port {}", listener.port());
 
-  while let Some(res) = listener
-    .incoming()
-    .try_next()
-    .await
-    .transpose()
-  {
+  while let Some(res) = listener.incoming().try_next().await.transpose() {
     let mut stream = match res {
-      Ok(stream) => {
-        stream
-      }
+      Ok(stream) => stream,
       Err(err) => {
         tracing::error!("tcp accept: {err}");
         continue;
@@ -247,10 +240,19 @@ async fn send_initial_state(
     let node_id = game.node.as_ref().map(|node| node.id);
 
     if game.mask_player_names {
-      for (idx, slot) in game.slots.iter_mut().enumerate() {
-        slot.player.as_mut().map(|v| {
-          v.name = format!("Player {}", idx + 1);
-        });
+      let is_ob = game
+        .slots
+        .iter_mut()
+        .find(|slot| slot.player.as_ref().map(|p| p.id) == Some(player_id))
+        .map(|slot| slot.settings.team == 24)
+        .unwrap_or_default();
+
+      if !is_ob {
+        for (idx, slot) in game.slots.iter_mut().enumerate() {
+          slot.player.as_mut().map(|v| {
+            v.name = format!("Player {}", idx + 1);
+          });
+        }
       }
     }
 
