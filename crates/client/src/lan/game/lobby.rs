@@ -147,16 +147,24 @@ impl<'a> LobbyHandler<'a> {
       return Ok(());
     }
     self.starting = true;
+
+    self.ping_and_await_pong().await?;
+
     self
       .stream
       .send(Packet::simple(
         self.info.slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo
       )?)
       .await?;
+
+    self.ping_and_await_pong().await?;
+
     self.stream.send(Packet::simple(CountDownStart)?).await?;
 
     self.ping_and_await_pong().await?;
+
     sleep(Duration::from_secs(6)).await;
+
     self.ping_and_await_pong().await?;
 
     self.stream.send(Packet::simple(CountDownEnd)?).await?;
