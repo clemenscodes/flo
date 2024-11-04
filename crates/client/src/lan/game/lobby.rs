@@ -147,10 +147,39 @@ impl<'a> LobbyHandler<'a> {
       return Ok(());
     }
     self.starting = true;
-    self.stream.send(Packet::simple(self.info.slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo)?).await?;
+    self
+      .stream
+      .send(Packet::simple(
+        self.info.slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo
+      )?)
+      .await?;
     self.stream.send(Packet::simple(CountDownStart)?).await?;
+
+    self.ping_and_await_pong().await?;
     sleep(Duration::from_secs(6)).await;
+    self.ping_and_await_pong().await?;
+
     self.stream.send(Packet::simple(CountDownEnd)?).await?;
+    Ok(())
+  }
+
+  async fn ping_and_await_pong(&mut self) -> Result<()> {
+    self
+      .stream
+      .send(Packet::simple(PingFromHost::with_payload(0xFFFFFFFF))?)
+      .await?;
+    self.stream.flush().await?;
+
+    while let Some(pkt) = self.stream.recv().await? {
+      if let PongToHost::PACKET_TYPE_ID = pkt.type_id() {
+        let payload: PongToHost = pkt.decode_simple()?;
+        if payload.payload() == 0xFFFFFFFF {
+          break;
+        }
+      } else {
+        return Err(Error::UnexpectedW3GSPacket(pkt));
+      }
+    }
     Ok(())
   }
 
@@ -188,8 +217,9 @@ impl<'a> LobbyHandler<'a> {
           slot_info.slot_info.random_seed
         );
 
-        replies.push(Packet::simple(slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo)?);
-
+        replies.push(Packet::simple(
+          slot_info.slot_info.clone() as flo_w3gs::protocol::slot::SlotInfo
+        )?);
 
         let mut player_info_packets = Vec::with_capacity(num_players);
         let mut player_skin_packets = Vec::with_capacity(num_players);
