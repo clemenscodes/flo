@@ -181,6 +181,11 @@ impl<'a> LobbyHandler<'a> {
           break;
         }
       } else {
+        if let LeaveReq::PACKET_TYPE_ID = pkt.type_id() {
+          tracing::warn!("received leave LeaveReq during lobby count down, ignoring");
+          continue;
+        }
+
         return Err(Error::UnexpectedW3GSPacket(pkt));
       }
     }
@@ -359,6 +364,9 @@ impl<'a> LobbyHandler<'a> {
             tracing::warn!("unexpected protobuf packet type id: {}", id)
           }
         }
+      }
+      LeaveReq::PACKET_TYPE_ID => {
+        tracing::warn!("received leave request during lobby initialization, ignoring");
       }
       _ => return Err(Error::UnexpectedW3GSPacket(pkt)),
     }
