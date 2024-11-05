@@ -15,8 +15,8 @@ use crate::node::NodeInfo;
 use flo_lan::{GameInfo, MdnsPublisher};
 use flo_state::Addr;
 use flo_task::SpawnScope;
-use flo_types::node::{NodeGameStatus, SlotClientStatus};
 use flo_types::game::LocalGameInfo;
+use flo_types::node::{NodeGameStatus, SlotClientStatus};
 use flo_w3gs::protocol::game::GameSettings;
 use flo_w3map::MapChecksum;
 use proxy::LanProxy;
@@ -73,7 +73,7 @@ impl LanGame {
           my_player_id,
           game.random_seed,
           &game.slots,
-          game.map_twelve_p
+          game.map_twelve_p,
         )?,
         game,
         map_checksum,
@@ -106,7 +106,7 @@ impl LanGame {
             _ = mdns_shutdown_notify.notified() => {}
           }
 
-          sleep(Duration::from_secs(1)).await;
+          // sleep(Duration::from_secs(1)).await;
 
           tracing::debug!("exiting")
         }
@@ -127,15 +127,6 @@ impl LanGame {
   }
 
   pub async fn update_game_status(&self, status: NodeGameStatus) {
-    if ![
-      NodeGameStatus::Created,
-      NodeGameStatus::Waiting,
-      NodeGameStatus::Loading,
-    ]
-    .contains(&status)
-    {
-      self.mdns_shutdown_notify.notify_one();
-    }
     self.proxy.dispatch_game_status_change(status).await;
   }
 
@@ -151,6 +142,7 @@ impl LanGame {
   }
 
   pub fn shutdown(self) {
+    self.mdns_shutdown_notify.notify_one();
     tokio::spawn(async move {
       if let Err(_) =
         tokio::time::timeout(std::time::Duration::from_secs(10), self.proxy.shutdown()).await
