@@ -444,11 +444,8 @@ impl State {
                   node_stream.report_slot_status(SlotClientStatus::Loaded).await?;
                 },
                 LeaveReq::PACKET_TYPE_ID => {
-                  tracing::debug!("leave: {:?}", my_slot_player_id);
-                  node_stream.report_slot_status(SlotClientStatus::Connected).await.ok();
-                  stream.send(Packet::simple(LeaveAck)?).await?;
-                  stream.flush().await?;
-                  break;
+                  tracing::warn!("received leave request during loading, ignoring");
+                  continue;
                 }
                 PongToHost::PACKET_TYPE_ID => {}
                 _ => {

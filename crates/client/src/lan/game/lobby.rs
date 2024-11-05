@@ -83,12 +83,8 @@ impl<'a> LobbyHandler<'a> {
           let pkt = next?;
           if let Some(pkt) = pkt {
             if pkt.type_id() == LeaveReq::PACKET_TYPE_ID {
-              if let Some(node_stream) = self.node_stream.as_mut() {
-                node_stream.report_slot_status(SlotClientStatus::Connected).await.ok();
-              }
-              self.stream.send(Packet::simple(LeaveAck)?).await?;
-              self.stream.flush().await?;
-              return Ok(LobbyAction::Leave)
+              tracing::warn!("received leave request during lobby, ignoring");
+              continue;
             }
 
             self.handle_packet(&mut join_state, base_t, pkt).await?;
