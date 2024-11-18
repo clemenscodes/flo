@@ -8,9 +8,10 @@ pub mod observer;
 mod ping;
 pub mod platform;
 mod version;
+use tokio::sync::Notify;
 pub use version::FLO_VERSION;
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 #[derive(Debug, Default, Clone)]
 pub struct StartConfig {
@@ -23,6 +24,7 @@ pub struct StartConfig {
   pub ptr: Option<bool>,
   pub save_replay: bool, //Default value is false
   pub user_battlenet_client_id: Option<String>,
+  pub lobby_countdown_notify: Option<Arc<Notify>>,
 }
 
 pub use crate::message::embed::{start_embed, FloEmbedClient, FloEmbedClientHandle};

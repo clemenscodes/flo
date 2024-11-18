@@ -5,18 +5,19 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use game::LanGame;
+use tokio::sync::Notify;
 
 use crate::controller::ControllerClient;
 use crate::error::*;
 use crate::node::stream::NodeStreamEvent;
 use crate::node::NodeInfo;
-use crate::platform::{CalcMapChecksum, GetClientPlatformInfo, Platform, GetSaveReplayStartConfig};
+use crate::platform::{CalcMapChecksum, GetClientPlatformInfo, GetSaveReplayStartConfig, Platform};
 use crate::StartConfig;
 use flo_state::{
   async_trait, Actor, Addr, Context, Deferred, Handler, Message, RegistryRef, Service,
 };
-use flo_types::node::{NodeGameStatus, SlotClientStatus};
 use flo_types::game::LocalGameInfo;
+use flo_types::node::{NodeGameStatus, SlotClientStatus};
 
 pub struct Lan {
   platform: Addr<Platform>,
@@ -45,6 +46,7 @@ pub struct ReplaceLanGame {
   pub node: Arc<NodeInfo>,
   pub player_token: Vec<u8>,
   pub game: Arc<LocalGameInfo>,
+  pub lobby_countdown_notify: Option<Arc<Notify>>,
 }
 
 impl Message for ReplaceLanGame {
@@ -61,6 +63,7 @@ impl Handler<ReplaceLanGame> for Lan {
       node,
       player_token,
       game,
+      lobby_countdown_notify,
     }: ReplaceLanGame,
   ) -> <ReplaceLanGame as Message>::Result {
     let game_id = game.game_id;
@@ -91,20 +94,25 @@ impl Handler<ReplaceLanGame> for Lan {
         .send(GetClientPlatformInfo::default())
         .await?
         .map_err(|_| Error::War3NotLocated)?;
-        
-      let game_version  = client_info.version;
+
+      let game_version = client_info.version;
       let data_path = client_info.user_data_path;
-      let mut user_replay_path = data_path.into_os_string().into_string().unwrap_or("".to_string());
+      let mut user_replay_path = data_path
+        .into_os_string()
+        .into_string()
+        .unwrap_or("".to_string());
       user_replay_path.push_str("\\BattleNet\\");
       user_replay_path.push_str(&client_info.user_battlenet_id);
       user_replay_path.push_str("\\Replays\\");
 
-
       let save_replay = self
-          .platform
-          .send(GetSaveReplayStartConfig::default())
-          .await?
-          .map_err(|err| { tracing::error!("Could not get replay save config: {}", err); Error::LocalGameInfoNotFound })?;
+        .platform
+        .send(GetSaveReplayStartConfig::default())
+        .await?
+        .map_err(|err| {
+          tracing::error!("Could not get replay save config: {}", err);
+          Error::LocalGameInfoNotFound
+        })?;
 
       let lan_game = LanGame::create(
         game_version,
@@ -116,6 +124,7 @@ impl Handler<ReplaceLanGame> for Lan {
         self.client.resolve().await?,
         save_replay,
         user_replay_path,
+        lobby_countdown_notify,
       )
       .await?;
       tracing::info!(player_id = my_player_id, game_id, "lan game created.");

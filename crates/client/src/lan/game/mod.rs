@@ -53,6 +53,7 @@ impl LanGame {
     client: Addr<ControllerClient>,
     save_replay: bool,
     user_replay_path: String,
+    lobby_countdown_notify: Option<Arc<Notify>>,
   ) -> Result<Self> {
     let mdns_shutdown_notify = Arc::new(Notify::new());
 
@@ -86,6 +87,7 @@ impl LanGame {
       game_version.clone(),
       save_replay,
       user_replay_path,
+      lobby_countdown_notify,
     )
     .await?;
     game_info.set_port(proxy.port());

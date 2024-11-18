@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc::{channel, Receiver, Sender, WeakSender};
-use tokio::sync::{oneshot, watch};
+use tokio::sync::{oneshot, watch, Notify};
 use tokio::time::interval;
 use tokio_stream::StreamExt;
 use tracing_futures::Instrument;
@@ -54,6 +54,7 @@ impl LanProxy {
     game_version_string: String,
     save_replay: bool,
     user_replay_path: String,
+    lobby_countdown_notify: Option<Arc<Notify>>,
   ) -> Result<Self> {
     let scope = SpawnScope::new();
     let listener = W3GSListener::bind().await?;
@@ -104,6 +105,7 @@ impl LanProxy {
             game_version_string,
             save_replay,
             user_replay_path,
+            lobby_countdown_notify,
           )
           .await;
 
@@ -167,6 +169,7 @@ impl State {
     game_version_string: String,
     save_replay: bool,
     user_replay_path: String,
+    lobby_countdown_notify: Option<Arc<Notify>>,
   ) -> Result<()> {
     let mut node_stream = self.stream.clone();
     let mut status_rx = self.game_status_rx.clone();
@@ -211,6 +214,7 @@ impl State {
           &mut node_stream,
           &mut status_rx,
           weak_outgoing_tx,
+          lobby_countdown_notify.clone(),
         );
         tokio::pin!(lobby);
 
@@ -355,6 +359,7 @@ impl State {
     node_stream: &mut NodeStreamSender,
     status_rx: &mut watch::Receiver<Option<NodeGameStatus>>,
     weak_outgoing_tx: Option<WeakSender<OutgoingMessage>>,
+    lobby_countdown_notify: Option<Arc<Notify>>,
   ) -> Result<LobbyAction> {
     let mut lobby_handler = LobbyHandler::new(
       &self.info,
@@ -362,6 +367,7 @@ impl State {
       Some(node_stream),
       status_rx,
       weak_outgoing_tx,
+      lobby_countdown_notify,
     );
     let action = lobby_handler.run().await?;
     Ok(action)

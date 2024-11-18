@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc::WeakSender;
 use tokio::sync::watch::Receiver;
+use tokio::sync::Notify;
 use tokio::time::{interval_at, sleep};
 
 use flo_util::binary::SockAddr;
@@ -40,6 +42,7 @@ pub struct LobbyHandler<'a> {
   status_rx: &'a mut Receiver<Option<NodeGameStatus>>,
   starting: bool,
   weak_outgoing_tx: Option<WeakSender<OutgoingMessage>>,
+  lobby_countdown_notify: Option<Arc<Notify>>,
 }
 
 impl<'a> LobbyHandler<'a> {
@@ -49,6 +52,7 @@ impl<'a> LobbyHandler<'a> {
     node_stream: Option<&'a mut NodeStreamSender>,
     status_rx: &'a mut Receiver<Option<NodeGameStatus>>,
     weak_outgoing_tx: Option<WeakSender<OutgoingMessage>>,
+    lobby_countdown_notify: Option<Arc<Notify>>,
   ) -> Self {
     LobbyHandler {
       info,
@@ -57,6 +61,7 @@ impl<'a> LobbyHandler<'a> {
       status_rx,
       starting: false,
       weak_outgoing_tx,
+      lobby_countdown_notify,
     }
   }
 
@@ -144,8 +149,6 @@ impl<'a> LobbyHandler<'a> {
     }
     self.starting = true;
 
-    self.ping_and_await_pong().await?;
-
     self
       .stream
       .send(Packet::simple(
@@ -153,42 +156,27 @@ impl<'a> LobbyHandler<'a> {
       )?)
       .await?;
 
-    self.ping_and_await_pong().await?;
-
     self.stream.send(Packet::simple(CountDownStart)?).await?;
 
-    self.ping_and_await_pong().await?;
+    sleep(Duration::from_secs(3)).await;
 
-    sleep(Duration::from_secs(6)).await;
-
-    self.ping_and_await_pong().await?;
+    // If we have a countdown notify, wait for it to be notified
+    // This is used to synchronize with the countdown state in Reforged client
+    // Without this, the game may start too early and cause instant-to-score-screen bug for slow computers
+    if let Some(ref notify) = self.lobby_countdown_notify {
+      tokio::select! {
+        _ = notify.notified() => {
+          tracing::debug!("lobby countdown notify received");
+        }
+        _ = sleep(Duration::from_secs(6)) => {
+          tracing::debug!("lobby countdown notify timeout");
+        }
+      }
+    } else {
+      sleep(Duration::from_secs(3)).await;
+    }
 
     self.stream.send(Packet::simple(CountDownEnd)?).await?;
-    Ok(())
-  }
-
-  async fn ping_and_await_pong(&mut self) -> Result<()> {
-    self
-      .stream
-      .send(Packet::simple(PingFromHost::with_payload(0xFFFFFFFF))?)
-      .await?;
-    self.stream.flush().await?;
-
-    while let Some(pkt) = self.stream.recv().await? {
-      if let PongToHost::PACKET_TYPE_ID = pkt.type_id() {
-        let payload: PongToHost = pkt.decode_simple()?;
-        if payload.payload() == 0xFFFFFFFF {
-          break;
-        }
-      } else {
-        if let LeaveReq::PACKET_TYPE_ID = pkt.type_id() {
-          tracing::warn!("received leave LeaveReq during lobby count down, ignoring");
-          continue;
-        }
-
-        return Err(Error::UnexpectedW3GSPacket(pkt));
-      }
-    }
     Ok(())
   }
 

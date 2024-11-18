@@ -27,6 +27,7 @@ use flo_types::game::PlayerSession;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc::WeakSender;
+use tokio::sync::Notify;
 
 pub struct ControllerClient {
   config: ClientConfig,
@@ -39,6 +40,7 @@ pub struct ControllerClient {
   current_session: Option<PlayerSession>,
   initial_token: Option<String>,
   mute_list: Vec<i32>,
+  lobby_countdown_notify: Option<Arc<Notify>>,
 }
 
 impl ControllerClient {
@@ -98,6 +100,7 @@ impl ControllerClient {
       node: Arc::new(node_info),
       player_token: event.player_token,
       game: event.game_info,
+      lobby_countdown_notify: self.lobby_countdown_notify.clone(),
     };
 
     if let Err(err) = self
@@ -160,6 +163,7 @@ impl Service<StartConfig> for ControllerClient {
       current_session: None,
       initial_token: registry.data().token.clone(),
       mute_list: vec![],
+      lobby_countdown_notify: registry.data().lobby_countdown_notify.clone(),
     })
   }
 }
