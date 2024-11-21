@@ -59,3 +59,11 @@ async-dnssd = { git = "https://github.com/stbuehler/rust-async-dnssd.git" }
 [profile.release-with-debug]
 inherits = "release"
 debug = true
+
+[workspace.metadata.crane]
+name = "flo"
+
+[workspace.package]
+version = "0.18.0"
+edition = "2021"
+license = "MIT"
